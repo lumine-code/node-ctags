@@ -3,88 +3,83 @@
 #include "tag-finder.h"
 #include "tag-reader.h"
 
-void Tags::Init(Local<Object> target) {
-  Nan::HandleScope handle_scope;
-  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+Napi::Object Tags::Init(Napi::Env env, Napi::Object exports) {
+  Napi::Function constructor = DefineClass(env, "Tags", {
+    InstanceMethod("end", &Tags::End),
+    InstanceMethod("exists", &Tags::Exists),
+    InstanceMethod("findTags", &Tags::FindTags),
+    InstanceMethod("getTags", &Tags::GetTags),
+  });
 
-  Local<FunctionTemplate> newTemplate = Nan::New<FunctionTemplate>(Tags::New);
-  newTemplate->SetClassName(Nan::New<String>("Tags").ToLocalChecked());
-  newTemplate->InstanceTemplate()->SetInternalFieldCount(1);
-
-  Local<ObjectTemplate> proto = newTemplate->PrototypeTemplate();
-  Nan::SetMethod(proto, "end", Tags::End);
-  Nan::SetMethod(proto, "exists", Tags::Exists);
-  Nan::SetMethod(proto, "findTags", Tags::FindTags);
-  Nan::SetMethod(proto, "getTags", Tags::GetTags);
-
-  Nan::Set(target, Nan::New<String>("Tags").ToLocalChecked(),
-              newTemplate->GetFunction(context).ToLocalChecked());
+  exports.Set("Tags", constructor);
+  return exports;
 }
 
-NODE_MODULE_INIT() {
-  Tags::Init(exports);
+Napi::Object InitModule(Napi::Env env, Napi::Object exports) {
+  return Tags::Init(env, exports);
 }
 
-NAN_METHOD(Tags::New) {
-  Tags *tags = new Tags(Local<String>::Cast(info[0]));
-  tags->Wrap(info.This());
-  info.GetReturnValue().SetUndefined();
-}
+NODE_API_MODULE(ctags, InitModule)
 
-tagFile* Tags::GetFile(v8::Local<v8::Object> obj) {
-  return node::ObjectWrap::Unwrap<Tags>(obj)->file;
-}
-
-NAN_METHOD(Tags::GetTags) {
-  tagFile *tagFile = GetFile(info.This());
-  v8::Local<v8::Context> context = Nan::GetCurrentContext();
-  int chunkSize = info[0]->Uint32Value(context).FromJust();
-  Nan::Callback *callback = new Nan::Callback(info[1].As<Function>());
-  Nan::AsyncQueueWorker(new TagReader(callback, chunkSize, tagFile));
-  info.GetReturnValue().SetUndefined();
-}
-
-NAN_METHOD(Tags::FindTags) {
-  Nan::HandleScope handle_scope;
-
-  tagFile *tagFile = GetFile(info.This());
-  std::string tag(*Nan::Utf8String(info[0]));
-  int options = 0;
-  if (Nan::To<bool>(info[1]).FromJust())
-    options |= TAG_PARTIALMATCH;
-  else
-    options |= TAG_FULLMATCH;
-
-  if (Nan::To<bool>(info[2]).FromJust())
-    options |= TAG_IGNORECASE;
-  else
-    options |= TAG_OBSERVECASE;
-
-  Nan::Callback *callback = new Nan::Callback(info[3].As<Function>());
-  Nan::AsyncQueueWorker(new TagFinder(callback, tag, options, tagFile));
-  info.GetReturnValue().SetUndefined();
-}
-
-Tags::Tags(Local<String> path) {
-  Nan::HandleScope handle_scope;
-
-  std::string filePath(*Nan::Utf8String(path));
-  tagFileInfo info;
-  file = tagsOpen(filePath.data(), &info);
-  if (!info.status.opened)
-    file = NULL;
-}
-
-NAN_METHOD(Tags::Exists) {
-  info.GetReturnValue().Set(GetFile(info.This()) != NULL);
-}
-
-NAN_METHOD(Tags::End) {
-  tagFile *file = GetFile(info.This());
-  if (file != NULL) {
-    tagsClose(file);
-    node::ObjectWrap::Unwrap<Tags>(info.This())->file = NULL;
+Tags::Tags(const Napi::CallbackInfo& info)
+    : Napi::ObjectWrap<Tags>(info), file(nullptr) {
+  if (info.Length() < 1 || !info[0].IsString()) {
+    Napi::TypeError::New(info.Env(), "Path must be a string")
+        .ThrowAsJavaScriptException();
+    return;
   }
 
-  info.GetReturnValue().SetUndefined();
+  std::string filePath = info[0].As<Napi::String>().Utf8Value();
+  tagFileInfo fileInfo;
+  file = tagsOpen(filePath.c_str(), &fileInfo);
+  if (!fileInfo.status.opened)
+    file = nullptr;
+}
+
+Tags::~Tags() {
+  if (file != nullptr) {
+    tagsClose(file);
+    file = nullptr;
+  }
+}
+
+Napi::Value Tags::GetTags(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() < 2 || !info[0].IsNumber() || !info[1].IsFunction()) {
+    Napi::TypeError::New(env, "Expected a chunk size and callback")
+        .ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  int chunkSize = info[0].As<Napi::Number>().Uint32Value();
+  (new TagReader(info[1].As<Napi::Function>(), chunkSize, file))->Queue();
+  return env.Undefined();
+}
+
+Napi::Value Tags::FindTags(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() < 4 || !info[0].IsString() || !info[3].IsFunction()) {
+    Napi::TypeError::New(env, "Expected a tag, options, and callback")
+        .ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  std::string tag = info[0].As<Napi::String>().Utf8Value();
+  int options = info[1].ToBoolean().Value() ? TAG_PARTIALMATCH : TAG_FULLMATCH;
+  options |= info[2].ToBoolean().Value() ? TAG_IGNORECASE : TAG_OBSERVECASE;
+
+  (new TagFinder(info[3].As<Napi::Function>(), tag, options, file))->Queue();
+  return env.Undefined();
+}
+
+Napi::Value Tags::Exists(const Napi::CallbackInfo& info) {
+  return Napi::Boolean::New(info.Env(), file != nullptr);
+}
+
+Napi::Value Tags::End(const Napi::CallbackInfo& info) {
+  if (file != nullptr) {
+    tagsClose(file);
+    file = nullptr;
+  }
+  return info.Env().Undefined();
 }

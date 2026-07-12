@@ -2,31 +2,20 @@
 #define SRC_TAGS_H_
 
 #include <string>
-#include "nan.h"
+#include <napi.h>
 #include "readtags.h"
 
-using namespace v8;  // NOLINT
-
-class Tags : public node::ObjectWrap {
+class Tags : public Napi::ObjectWrap<Tags> {
  public:
-  static void Init(Local<Object> target);
+  static Napi::Object Init(Napi::Env env, Napi::Object exports);
+  explicit Tags(const Napi::CallbackInfo& info);
+  ~Tags();
 
  private:
-  static NAN_METHOD(End);
-  static NAN_METHOD(Exists);
-  static NAN_METHOD(FindTags);
-  static NAN_METHOD(GetTags);
-  static NAN_METHOD(New);
-
-  static tagFile* GetFile(v8::Local<v8::Object> obj);
-
-  explicit Tags(Local<String> path);
-  ~Tags() {
-    if (file != NULL) {
-      tagsClose(file);
-      file = NULL;
-    }
-  };
+  Napi::Value End(const Napi::CallbackInfo& info);
+  Napi::Value Exists(const Napi::CallbackInfo& info);
+  Napi::Value FindTags(const Napi::CallbackInfo& info);
+  Napi::Value GetTags(const Napi::CallbackInfo& info);
 
   tagFile* file;
 };

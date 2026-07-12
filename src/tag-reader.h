@@ -2,21 +2,17 @@
 #define SRC_TAG_READER_H_
 
 #include <vector>
-#include "nan.h"
+#include <napi.h>
 #include "tag.h"
 #include "readtags.h"
 
-using namespace v8;
-
-class TagReader : public Nan::AsyncWorker {
+class TagReader : public Napi::AsyncWorker {
  public:
-  TagReader(Nan::Callback *callback, int chunkSize, tagFile *file)
-    : Nan::AsyncWorker(callback), chunkSize(chunkSize), file(file) {}
+  TagReader(const Napi::Function& callback, int chunkSize, tagFile* file)
+    : Napi::AsyncWorker(callback), chunkSize(chunkSize), file(file) {}
 
-  ~TagReader() {}
-
-  void Execute();
-  void HandleOKCallback();
+  void Execute() override;
+  void OnOK() override;
 
  private:
   int chunkSize;
