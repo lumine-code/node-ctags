@@ -1,9 +1,14 @@
-##### Atom and all repositories under Atom will be archived on December 15, 2022. Learn more in our [official announcement](https://github.blog/2022-06-08-sunsetting-atom/)
 # @lumine-code/ctags
 
-Read all about ctags [here](http://ctags.sourceforge.net/).
+Reads and streams source code tag files from Node.js.
 
-## Installing
+## Features
+
+- **Tag lookup**: finds exact, partial, and case-insensitive matches in ctags files.
+- **Streaming reads**: emits parsed tags in chunks without loading the full file into memory.
+- **Node-API addon**: provides native tag parsing without relying on V8-specific APIs.
+
+## Installation
 
 ```sh
 npm install @lumine-code/ctags
@@ -69,10 +74,14 @@ Returns a stream.
 #### Example
 
 ```coffeescript
-ctags = require 'ctags'
+ctags = require '@lumine-code/ctags'
 
 stream = ctags.createReadStream('/Users/me/repos/node/tags')
 stream.on 'data', (tags) ->
   for tag in tags
     console.log("#{tag.name} is in #{tag.file} with pattern: #{tag.pattern}")
 ```
+
+## Contributing
+
+Got ideas to make this package better, found a bug, or want to help add new features? Just drop your thoughts on GitHub. Any feedback is welcome!
