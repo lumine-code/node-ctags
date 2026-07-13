@@ -1,12 +1,12 @@
 ##### Atom and all repositories under Atom will be archived on December 15, 2022. Learn more in our [official announcement](https://github.blog/2022-06-08-sunsetting-atom/)
- # Ctags Node module [![Build Status](https://travis-ci.org/atom/node-ctags.png)](https://travis-ci.org/atom/node-ctags)
+# @lumine-code/ctags
 
 Read all about ctags [here](http://ctags.sourceforge.net/).
 
 ## Installing
 
 ```sh
-npm install ctags
+npm install @lumine-code/ctags
 ```
 
 ## Building
@@ -40,7 +40,7 @@ Get all tags matching the tag specified from the tags file at the path.
 #### Example
 
 ```coffeescript
-ctags = require 'ctags'
+ctags = require '@lumine-code/ctags'
 
 ctags.findTags('/Users/me/repos/node/tags', 'exists', (error, tags=[]) ->
   for tag in tags
