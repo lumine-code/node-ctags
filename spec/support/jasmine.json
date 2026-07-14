@@ -1,0 +1,12 @@
+{
+  "spec_dir": "spec",
+  "spec_files": [
+    "ctags.test.js"
+  ],
+  "helpers": [],
+  "env": {
+    "forbidDuplicateNames": false,
+    "stopSpecOnExpectationFailure": false,
+    "random": true
+  }
+}

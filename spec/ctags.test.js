@@ -1,40 +1,42 @@
 "use strict";
 
-const assert = require("node:assert/strict");
 const path = require("node:path");
-const test = require("node:test");
 const ctags = require("../lib/ctags");
 
 const tagsFile = path.join(__dirname, "fixtures", "tags");
 
-test("findTags returns matching tags", async () => {
-  const tags = await new Promise((resolve, reject) => {
-    ctags.findTags(tagsFile, "duplicate", (error, matches) => {
-      if (error) reject(error);
-      else resolve(matches);
+describe("ctags", () => {
+  it("findTags returns matching tags", async () => {
+    const tags = await new Promise((resolve, reject) => {
+      ctags.findTags(tagsFile, "duplicate", (error, matches) => {
+        if (error) reject(error);
+        else resolve(matches);
+      });
     });
+
+    expect(tags.length).toBe(2);
+    expect(tags[0].name).toBe("duplicate");
+    expect(tags[1].name).toBe("duplicate");
   });
 
-  assert.equal(tags.length, 2);
-  assert.equal(tags[0].name, "duplicate");
-  assert.equal(tags[1].name, "duplicate");
-});
-
-test("createReadStream emits tags in chunks", async () => {
-  const chunks = [];
-  for await (const chunk of ctags.createReadStream(tagsFile, { chunkSize: 3 })) {
-    chunks.push(chunk);
-  }
-
-  assert.deepEqual(chunks.map((chunk) => chunk.length), [3, 1]);
-  assert.equal(chunks.flat().length, 4);
-});
-
-test("createReadStream reports missing files", async () => {
-  const missingFile = path.join(__dirname, "fixtures", "missing-tags");
-  await assert.rejects(async () => {
-    for await (const _ of ctags.createReadStream(missingFile)) {
-      // Consume the stream.
+  it("createReadStream emits tags in chunks", async () => {
+    const chunks = [];
+    for await (const chunk of ctags.createReadStream(tagsFile, { chunkSize: 3 })) {
+      chunks.push(chunk);
     }
-  }, /Tags file could not be opened/);
+
+    expect(chunks.map((chunk) => chunk.length)).toEqual([3, 1]);
+    expect(chunks.flat().length).toBe(4);
+  });
+
+  it("createReadStream reports missing files", async () => {
+    const missingFile = path.join(__dirname, "fixtures", "missing-tags");
+    const consumeMissingFile = async () => {
+      for await (const _ of ctags.createReadStream(missingFile)) {
+        // Consume the stream.
+      }
+    };
+
+    await expectAsync(consumeMissingFile()).toBeRejectedWithError(/Tags file could not be opened/);
+  });
 });

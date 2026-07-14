@@ -15,10 +15,12 @@ npm install @lumine-code/ctags
 ```
 
 ## Building
-  * Clone the repository
-  * Run `npm install`
-  * Run `grunt` to compile the native and CoffeeScript code
-  * Run `grunt test` to run the specs
+
+```sh
+npm ci
+npm run build
+npm test
+```
 
 ## Documentation
 
@@ -44,12 +46,13 @@ Get all tags matching the tag specified from the tags file at the path.
 
 #### Example
 
-```coffeescript
-ctags = require '@lumine-code/ctags'
+```js
+const ctags = require('@lumine-code/ctags')
 
-ctags.findTags('/Users/me/repos/node/tags', 'exists', (error, tags=[]) ->
-  for tag in tags
-    console.log("#{tag.name} is in #{tag.file}")
+ctags.findTags('/Users/me/repos/node/tags', 'exists', (error, tags = []) => {
+  if (error) throw error
+  for (const tag of tags) console.log(`${tag.name} is in ${tag.file}`)
+})
 ```
 
 ### createReadStream(tagsFilePath, [options])
@@ -73,13 +76,15 @@ An `end` event will be emitted when all the tags have been read.
 Returns a stream.
 #### Example
 
-```coffeescript
-ctags = require '@lumine-code/ctags'
+```js
+const ctags = require('@lumine-code/ctags')
 
-stream = ctags.createReadStream('/Users/me/repos/node/tags')
-stream.on 'data', (tags) ->
-  for tag in tags
-    console.log("#{tag.name} is in #{tag.file} with pattern: #{tag.pattern}")
+const stream = ctags.createReadStream('/Users/me/repos/node/tags')
+stream.on('data', tags => {
+  for (const tag of tags) {
+    console.log(`${tag.name} is in ${tag.file} with pattern: ${tag.pattern}`)
+  }
+})
 ```
 
 ## Contributing

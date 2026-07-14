@@ -16,6 +16,7 @@
   "homepage": "https://github.com/lumine-code/node-ctags",
   "main": "./lib/ctags.js",
   "devDependencies": {
+    "jasmine": "^6.3.0",
     "node-gyp": "^12.1.0"
   },
   "dependencies": {
@@ -23,6 +24,6 @@
   },
   "scripts": {
     "build": "node-gyp rebuild",
-    "test": "npm run build && node --test spec/ctags.test.js"
+    "test": "npm run build && jasmine"
   }
 }
